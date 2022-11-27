@@ -36,36 +36,36 @@ struct RenderAR {
         return nil
     }
     
+    var size: CGSize {
+        if let view = view as? ARSCNView {
+            return CGSize(width: view.frame.width, height: view.frame.height)
+        } else if let view = view as? ARSKView {
+            guard let rawBuffer = view.session.currentFrame?.capturedImage else { return CGSizeZero }
+            return CGSize(width: CVPixelBufferGetWidth(rawBuffer), height: CVPixelBufferGetHeight(rawBuffer))
+        } else if let buffer = buffer {
+            return CGSize(width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer))
+        }
+        return CGSizeZero
+    }
+        
     var bufferSize: CGSize? {
         guard let raw = rawBuffer else { return nil }
-        var width = CVPixelBufferGetWidth(raw)
-        var height = CVPixelBufferGetHeight(raw)
+        let scale = UIScreen.main.scale
+        var width = Int(size.width * scale)
+        var height = Int(size.height * scale)
         
         if let contentMode = ARcontentMode {
             switch contentMode {
             case .auto:
-                if UIScreen.main.isNotch {
-                    width = Int(UIScreen.main.nativeBounds.width)
-                    height = Int(UIScreen.main.nativeBounds.height)
-                }
+                break
             case .aspectFit:
                 width = CVPixelBufferGetWidth(raw)
                 height = CVPixelBufferGetHeight(raw)
             case .aspectFill:
                 width = Int(UIScreen.main.nativeBounds.width)
                 height = Int(UIScreen.main.nativeBounds.height)
-            case .viewAspectRatio where view is UIView:
-                let bufferWidth = CVPixelBufferGetWidth(raw)
-                let bufferHeight = CVPixelBufferGetHeight(raw)
-                let viewSize = (view as! UIView).bounds.size
-                let targetSize = AVMakeRect(aspectRatio: viewSize, insideRect: CGRect(x: 0, y: 0, width: bufferWidth, height: bufferHeight)).size
-                width = Int(targetSize.width)
-                height = Int(targetSize.height)
             default:
-                if UIScreen.main.isNotch {
-                    width = Int(UIScreen.main.nativeBounds.width)
-                    height = Int(UIScreen.main.nativeBounds.height)
-                }
+                break
             }
         }
         
@@ -75,6 +75,7 @@ struct RenderAR {
             return CGSize(width: width, height: height)
         }
     }
+
     
     var bufferSizeFill: CGSize? {
         guard let raw = rawBuffer else { return nil }
